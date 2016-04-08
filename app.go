@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -72,15 +73,28 @@ func (bn brightcoveNotifier) listen() {
 	}
 }
 
-func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {
-	var videoEvent map[string]interface{}
+type videoEvent struct {
+	TimeStamp int64
+	AccountID string
+	Event     string
+	Video     string
+	Version   int
+}
 
-	err := json.NewDecoder(r.Body).Decode(&videoEvent)
+func (ve videoEvent) String() string {
+	return fmt.Sprintf("videoEvent: TimeStamp: [%s], AccountId: [%s], Event: [%s], Video: [%s], Version: [%d]",
+		time.Unix(0, ve.TimeStamp*int64(time.Millisecond)).Format(time.RFC3339), ve.AccountID, ve.Event, ve.Video, ve.Version)
+}
+
+func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {
+	var event videoEvent
+
+	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		warnLogger.Printf("[%v]", err)
 	}
 
-	infoLogger.Printf("Received: [%v]", videoEvent)
+	infoLogger.Printf("Received: [%v]", event)
 }
 
 func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request) {}
