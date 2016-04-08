@@ -60,7 +60,7 @@ func main() {
 
 func (bn brightcoveNotifier) listen() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", bn.handleNotification).Methods("POST")
+	r.HandleFunc("/notify", bn.handleNotification).Methods("POST")
 	r.HandleFunc("/__health", bn.health).Methods("GET")
 	r.HandleFunc("/__gtg", bn.gtg).Methods("GET")
 
