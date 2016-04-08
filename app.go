@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -71,9 +72,20 @@ func (bn brightcoveNotifier) listen() {
 	}
 }
 
-func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {}
-func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request)             {}
-func (bn brightcoveNotifier) gtg(w http.ResponseWriter, r *http.Request)                {}
+func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {
+	var videoEvent map[string]interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&videoEvent)
+	if err != nil {
+		warnLogger.Printf("[%v]", err)
+	}
+
+	infoLogger.Printf("Received: [%v]", videoEvent)
+}
+
+func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request) {}
+
+func (bn brightcoveNotifier) gtg(w http.ResponseWriter, r *http.Request) {}
 
 func initLogs(infoHandle io.Writer, warnHandle io.Writer, errorHandle io.Writer) {
 	infoLogger = log.New(infoHandle, "INFO  - ", logPattern)
