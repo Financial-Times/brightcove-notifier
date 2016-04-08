@@ -1,0 +1,18 @@
+{
+	"ImportPath": "github.com/Financial-Times/brightcove-notifier",
+	"GoVersion": "go1.6",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "c9e326e2bdec29039a3761c07bece13133863e1e"
+		},
+		{
+			"ImportPath": "github.com/jawher/mow.cli",
+			"Rev": "5791680041867a1ba02dba484d050ad44596a55e"
+		}
+	]
+}
