@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -51,6 +52,7 @@ func main() {
 		ch := make(chan os.Signal)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 		<-ch
+		infoLogger.Println("Received termination signal. Quitting... \nBye")
 	}
 	app.Run(os.Args)
 }
@@ -62,7 +64,8 @@ func (bn brightcoveNotifier) listen() {
 	r.HandleFunc("/__gtg", bn.gtg).Methods("GET")
 
 	http.Handle("/", r)
-	err := http.ListenAndServe(":8080", nil)
+	infoLogger.Printf("Starting to listen on port [%d]", bn.port)
+	err := http.ListenAndServe(":"+strconv.Itoa(bn.port), nil)
 	if err != nil {
 		errorLogger.Panicf("Couldn't set up HTTP listener: %+v\n", err)
 	}
