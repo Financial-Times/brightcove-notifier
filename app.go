@@ -115,7 +115,6 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	err = bn.fwdVideo(video)
 	if err == nil {
 		warnLogger.Printf("Forwarding video: [%v]", err)
@@ -147,6 +146,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		infoLogger.Printf("Fetching video successful. Size: [%d]", len(video))
 		return video, nil
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
@@ -170,6 +170,7 @@ func (bn brightcoveNotifier) fwdVideo(video []byte) error {
 		msg, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("Status code 400. [%s]", string(msg[:]))
 	case 200:
+		infoLogger.Println("Forwarding video successful.")
 		return nil
 	default:
 		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
