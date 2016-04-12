@@ -74,11 +74,11 @@ func (bn brightcoveNotifier) listen() {
 }
 
 type videoEvent struct {
-	TimeStamp int64
-	AccountID string
-	Event     string
-	Video     string
-	Version   int
+	TimeStamp int64  `json:"timeStamp"`
+	AccountID string `json:"accountId"`
+	Event     string `json:"event"`
+	Video     string `json:"video"`
+	Version   int    `json:"version"`
 }
 
 func (ve videoEvent) String() string {
