@@ -31,16 +31,15 @@ func init() {
 
 type brightcoveNotifier struct {
 	port            int
-	brightcoveConf  brightcoveConfig
-	cmsNotifierConf cmsNotifierConfig
+	brightcoveConf  *brightcoveConfig
+	cmsNotifierConf *cmsNotifierConfig
 	client          *http.Client
 }
 
 type brightcoveConfig struct {
-	addr         string
-	clientID     string
-	clientSecret string
-	accessToken  string
+	addr        string
+	auth        string
+	accessToken string
 }
 
 type cmsNotifierConfig struct {
@@ -63,19 +62,31 @@ func main() {
 		Desc:   "brightcove api's address",
 		EnvVar: "BRIGHTCOVE",
 	})
+	brightcoveAuth := app.String(cli.StringOpt{
+		Name:   "brightcove-auth",
+		Value:  "",
+		Desc:   "brightcove OAUTH API authorization header",
+		EnvVar: "BRIGHTCOVE_CLIENT_ID",
+	})
 	cmsNotifier := app.String(cli.StringOpt{
 		Name:   "cms-notifier",
 		Value:  "http://localhost:13080/notify",
 		Desc:   "cms notifier's address",
 		EnvVar: "CMS_NOTIFIER",
 	})
+	cmsNotifierAuth := app.String(cli.StringOpt{
+		Name:   "cms-notifier-auth",
+		Value:  "",
+		Desc:   "cms notifier authorization header",
+		EnvVar: "CMS_NOTIFIER_AUTH",
+	})
 
 	bn := &brightcoveNotifier{
 		port: *port,
-		brightcoveConf: brightcoveConfig{
+		brightcoveConf: &brightcoveConfig{
 			addr: *brightcove,
 		},
-		cmsNotifierConf: cmsNotifierConfig{
+		cmsNotifierConf: &cmsNotifierConfig{
 			addr: *cmsNotifier,
 		},
 		client: &http.Client{},
