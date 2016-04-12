@@ -30,10 +30,22 @@ func init() {
 }
 
 type brightcoveNotifier struct {
-	port        int
-	brightcove  string
-	cmsNotifier string
-	client      *http.Client
+	port            int
+	brightcoveConf  brightcoveConfig
+	cmsNotifierConf cmsNotifierConfig
+	client          *http.Client
+}
+
+type brightcoveConfig struct {
+	addr         string
+	clientID     string
+	clientSecret string
+	accessToken  string
+}
+
+type cmsNotifierConfig struct {
+	addr string
+	auth string
 }
 
 func main() {
@@ -58,7 +70,16 @@ func main() {
 		EnvVar: "CMS_NOTIFIER",
 	})
 
-	bn := &brightcoveNotifier{*port, *brightcove, *cmsNotifier, &http.Client{}}
+	bn := &brightcoveNotifier{
+		port: *port,
+		brightcoveConf: brightcoveConfig{
+			addr: *brightcove,
+		},
+		cmsNotifierConf: cmsNotifierConfig{
+			addr: *cmsNotifier,
+		},
+		client: &http.Client{},
+	}
 
 	app.Action = func() {
 		go bn.listen()
@@ -108,7 +129,6 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	infoLogger.Printf("Received: [%v]", event)
 
 	//TODO use pipes
-
 	video, err := bn.fetchVideo(event)
 	if err == nil {
 		warnLogger.Printf("Fetching video: [%v]", err)
@@ -124,11 +144,12 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 }
 
 func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(bn.brightcove, ve.AccountID, ve.Video), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf(bn.brightcoveConf.addr, ve.AccountID, ve.Video), nil)
 	if err != nil {
 		return nil, err
 	}
-
+	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+bn.brightcoveConf.accessToken)
 	resp, err := bn.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -136,7 +157,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 	defer cleanupResp(resp)
 	switch resp.StatusCode {
 	case 401:
-		//regenerate access token
+		//TODO regenerate access token
 		//then re-try
 		return bn.fetchVideo(ve)
 	case 404:
@@ -155,11 +176,12 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 }
 
 func (bn brightcoveNotifier) fwdVideo(video []byte) error {
-	req, err := http.NewRequest("POST", bn.cmsNotifier, bytes.NewReader(video))
+	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr, bytes.NewReader(video))
 	if err != nil {
 		return err
 	}
-
+	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	req.Header.Add("X-Origin-System-Id", "brightcove")
 	resp, err := bn.client.Do(req)
 	if err != nil {
 		return err
