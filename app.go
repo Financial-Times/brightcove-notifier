@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -29,7 +31,9 @@ func init() {
 
 type brightcoveNotifier struct {
 	port        int
+	brightcove  string
 	cmsNotifier string
+	client      *http.Client
 }
 
 func main() {
@@ -40,14 +44,21 @@ func main() {
 		Desc:   "application port",
 		EnvVar: "PORT",
 	})
+	brightcove := app.String(cli.StringOpt{
+		Name: "brightcove",
+		// https://cms.api.brightcove.com/v1/accounts/:account_id/videos/:video_id
+		Value:  "https://cms.api.brightcove.com/v1/accounts/%s/videos/%s",
+		Desc:   "brightcove api's address",
+		EnvVar: "BRIGHTCOVE",
+	})
 	cmsNotifier := app.String(cli.StringOpt{
 		Name:   "cms-notifier",
-		Value:  "localhost:13080",
+		Value:  "http://localhost:13080/notify",
 		Desc:   "cms notifier's address",
 		EnvVar: "CMS_NOTIFIER",
 	})
 
-	bn := &brightcoveNotifier{*port, *cmsNotifier}
+	bn := &brightcoveNotifier{*port, *brightcove, *cmsNotifier, &http.Client{}}
 
 	app.Action = func() {
 		go bn.listen()
@@ -95,6 +106,77 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	}
 
 	infoLogger.Printf("Received: [%v]", event)
+
+	video, err := bn.fetchVideo(event)
+	if err == nil {
+		warnLogger.Printf("Fetching video: [%v]", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = bn.fwdVideo(video)
+	if err == nil {
+		warnLogger.Printf("Forwarding video: [%v]", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf(bn.brightcove, ve.AccountID, ve.Video), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := bn.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanupResp(resp)
+	switch resp.StatusCode {
+	case 401:
+		//regenerate access token
+		//then re-try
+		return bn.fetchVideo(ve)
+	case 404:
+		fallthrough
+	case 200:
+		video, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return video, nil
+	default:
+		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
+	}
+
+}
+
+func (bn brightcoveNotifier) fwdVideo(video []byte) error {
+	req, err := http.NewRequest("POST", bn.cmsNotifier, bytes.NewReader(video))
+	if err != nil {
+		return err
+	}
+
+	resp, err := bn.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer cleanupResp(resp)
+	switch resp.StatusCode {
+	case 400:
+		msg, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("Status code 400. [%s]", string(msg[:]))
+	case 200:
+		return nil
+	default:
+		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
+	}
+}
+
+func cleanupResp(resp *http.Response) {
+	io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
 }
 
 func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request) {}
