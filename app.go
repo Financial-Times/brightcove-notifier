@@ -107,6 +107,8 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 
 	infoLogger.Printf("Received: [%v]", event)
 
+	//TODO use pipes
+
 	video, err := bn.fetchVideo(event)
 	if err == nil {
 		warnLogger.Printf("Fetching video: [%v]", err)
