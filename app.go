@@ -38,8 +38,11 @@ type brightcoveNotifier struct {
 
 type brightcoveConfig struct {
 	addr        string
-	auth        string
 	accessToken string
+
+	//Brightcove OAuth API access token endpoint
+	oauthAddr string
+	auth      string
 }
 
 type cmsNotifierConfig struct {
@@ -59,19 +62,25 @@ func main() {
 		Name: "brightcove",
 		// https://cms.api.brightcove.com/v1/accounts/:account_id/videos/:video_id
 		Value:  "https://cms.api.brightcove.com/v1/accounts/%s/videos/%s",
-		Desc:   "brightcove api's address",
+		Desc:   "brightcove video api address",
 		EnvVar: "BRIGHTCOVE",
+	})
+	brightcoveOAuth := app.String(cli.StringOpt{
+		Name:   "brightcove-oauth",
+		Value:  "https://oauth.brightcove.com/v3/access_token",
+		Desc:   "brightcove oauth api address",
+		EnvVar: "BRIGHTCOVE_OAUTH",
 	})
 	brightcoveAuth := app.String(cli.StringOpt{
 		Name:   "brightcove-auth",
 		Value:  "",
 		Desc:   "brightcove OAUTH API authorization header",
-		EnvVar: "BRIGHTCOVE_CLIENT_ID",
+		EnvVar: "BRIGHTCOVE_AUTH",
 	})
 	cmsNotifier := app.String(cli.StringOpt{
 		Name:   "cms-notifier",
 		Value:  "http://localhost:13080/notify",
-		Desc:   "cms notifier's address",
+		Desc:   "cms notifier address",
 		EnvVar: "CMS_NOTIFIER",
 	})
 	cmsNotifierAuth := app.String(cli.StringOpt{
@@ -84,10 +93,13 @@ func main() {
 	bn := &brightcoveNotifier{
 		port: *port,
 		brightcoveConf: &brightcoveConfig{
-			addr: *brightcove,
+			addr:      *brightcove,
+			oauthAddr: *brightcoveOAuth,
+			auth:      *brightcoveAuth,
 		},
 		cmsNotifierConf: &cmsNotifierConfig{
 			addr: *cmsNotifier,
+			auth: *cmsNotifierAuth,
 		},
 		client: &http.Client{},
 	}
@@ -168,8 +180,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 	defer cleanupResp(resp)
 	switch resp.StatusCode {
 	case 401:
-		//TODO regenerate access token
-		//then re-try
+		bn.renewAccessToken()
 		return bn.fetchVideo(ve)
 	case 404:
 		fallthrough
@@ -191,8 +202,8 @@ func (bn brightcoveNotifier) fwdVideo(video []byte) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	req.Header.Add("X-Origin-System-Id", "brightcove")
+	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	resp, err := bn.client.Do(req)
 	if err != nil {
 		return err
@@ -208,6 +219,41 @@ func (bn brightcoveNotifier) fwdVideo(video []byte) error {
 	default:
 		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
 	}
+}
+
+const tokenRequest = "grant_type=client_credentials"
+
+type accessTokenResp struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	Expires     int    `json:"expires_in"`
+}
+
+func (bn brightcoveNotifier) renewAccessToken() error {
+	req, err := http.NewRequest("POST", bn.brightcoveConf.oauthAddr, bytes.NewReader([]byte(tokenRequest)))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", bn.brightcoveConf.auth)
+	resp, err := bn.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer cleanupResp(resp)
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
+	}
+	var jsonResp accessTokenResp
+	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	if err != nil {
+		return err
+	}
+	if jsonResp.AccessToken == "" {
+		return fmt.Errorf("Empty access token: [%#v]", jsonResp)
+	}
+	bn.brightcoveConf.accessToken = jsonResp.AccessToken
+	return nil
 }
 
 func cleanupResp(resp *http.Response) {
