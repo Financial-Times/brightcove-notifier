@@ -180,7 +180,11 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 	defer cleanupResp(resp)
 	switch resp.StatusCode {
 	case 401:
-		bn.renewAccessToken()
+		err = bn.renewAccessToken()
+		if err != nil {
+			errorLogger.Printf("Video publishing won't work. Renewing access token failure: [%v].", err)
+			return nil, err
+		}
 		return bn.fetchVideo(ve)
 	case 404:
 		fallthrough
