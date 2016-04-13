@@ -36,3 +36,15 @@ func TestRenewAccessToken_NewTokenIsSavedOnModel(t *testing.T) {
 func buildTestAccessTokenResponse(accToken string) string {
 	return fmt.Sprintf(`{"access_token": "%s","token_type": "Bearer","expires_in": 300}`, accToken)
 }
+
+func TestGenerateUUIDAndAddToPayload_IDExists_UUIDIsGenerated(t *testing.T) {
+	video := make(map[string]interface{})
+	video["id"] = "4492075574001"
+	err := generateUUIDAndAddToPayload(video)
+	if err != nil {
+		t.Fatalf("[%v]", err)
+	}
+	if uuid, present := video["uuid"]; !present || uuid == "" {
+		t.Fatalf("Expected valid uuid to be found in the map. Actual map: [%v]", video)
+	}
+}

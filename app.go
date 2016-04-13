@@ -16,6 +16,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
+	"github.com/pborman/uuid"
 )
 
 const logPattern = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile | log.LUTC
@@ -154,20 +155,39 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	infoLogger.Printf("Received: [%v]", event)
 
 	video, err := bn.fetchVideo(event)
-	if err == nil {
+	if err != nil {
 		warnLogger.Printf("Fetching video: [%v]", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	err = generateUUIDAndAddToPayload(video)
+	if err != nil {
+		warnLogger.Printf("[%v]", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	err = bn.fwdVideo(video)
-	if err == nil {
+	if err != nil {
 		warnLogger.Printf("Forwarding video: [%v]", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }
 
-func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
+func generateUUIDAndAddToPayload(video video) error {
+	id, ok := video["id"].(string)
+	if !ok {
+		return fmt.Errorf("Invalid content, missing video ID.")
+	}
+	video["uuid"] = uuid.NewMD5(uuid.UUID{}, []byte(id)).String()
+	return nil
+}
+
+type video map[string]interface{}
+
+func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf(bn.brightcoveConf.addr, ve.AccountID, ve.Video), nil)
 	if err != nil {
 		return nil, err
@@ -190,20 +210,25 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) ([]byte, error) {
 	case 404:
 		fallthrough
 	case 200:
-		video, err := ioutil.ReadAll(resp.Body)
+		var v video
+		err = json.NewDecoder(resp.Body).Decode(&v)
 		if err != nil {
 			return nil, err
 		}
-		infoLogger.Printf("Fetching video successful. Size: [%d]", len(video))
-		return video, nil
+		infoLogger.Printf("Fetching video successful. Size: [%d]", len(v))
+		return v, nil
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
 	}
 
 }
 
-func (bn brightcoveNotifier) fwdVideo(video []byte) error {
-	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr, bytes.NewReader(video))
+func (bn brightcoveNotifier) fwdVideo(video video) error {
+	videoJSON, err := json.Marshal(video)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr, bytes.NewReader(videoJSON))
 	if err != nil {
 		return err
 	}
