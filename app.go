@@ -18,7 +18,6 @@ import (
 	"github.com/jawher/mow.cli"
 )
 
-const dateLayout = time.RFC3339Nano
 const logPattern = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile | log.LUTC
 
 var infoLogger *log.Logger
@@ -111,7 +110,10 @@ func main() {
 		<-ch
 		infoLogger.Println("Received termination signal. Quitting... \nBye")
 	}
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		errorLogger.Printf("[%v]", err)
+	}
 }
 
 func (bn brightcoveNotifier) listen() {
@@ -151,7 +153,6 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 
 	infoLogger.Printf("Received: [%v]", event)
 
-	//TODO use pipes
 	video, err := bn.fetchVideo(event)
 	if err == nil {
 		warnLogger.Printf("Fetching video: [%v]", err)
@@ -248,21 +249,27 @@ func (bn brightcoveNotifier) renewAccessToken() error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
 	}
-	var jsonResp accessTokenResp
-	err = json.NewDecoder(resp.Body).Decode(&jsonResp)
+	var accTokenResp accessTokenResp
+	err = json.NewDecoder(resp.Body).Decode(&accTokenResp)
 	if err != nil {
 		return err
 	}
-	if jsonResp.AccessToken == "" {
-		return fmt.Errorf("Empty access token: [%#v]", jsonResp)
+	if accTokenResp.AccessToken == "" {
+		return fmt.Errorf("Empty access token: [%#v]", accTokenResp)
 	}
-	bn.brightcoveConf.accessToken = jsonResp.AccessToken
+	bn.brightcoveConf.accessToken = accTokenResp.AccessToken
 	return nil
 }
 
 func cleanupResp(resp *http.Response) {
-	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
+	_, err := io.Copy(ioutil.Discard, resp.Body)
+	if err != nil {
+		warnLogger.Printf("[%v]", err)
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		warnLogger.Printf("[%v]", err)
+	}
 }
 
 func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request) {}

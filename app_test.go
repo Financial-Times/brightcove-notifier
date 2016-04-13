@@ -29,7 +29,7 @@ func TestRenewAccessToken_NewTokenIsSavedOnModel(t *testing.T) {
 	}
 
 	if bn.brightcoveConf.accessToken != nextAccToken {
-		t.Fatal("Expected new access token to be available on brightcove model.\nExpected: [%s].\nActual: [%s]", nextAccToken, bn.brightcoveConf.accessToken)
+		t.Fatalf("Expected new access token to be available on brightcove model.\nExpected: [%s].\nActual: [%s]", nextAccToken, bn.brightcoveConf.accessToken)
 	}
 }
 
