@@ -77,7 +77,9 @@ func main() {
 		EnvVar: "BRIGHTCOVE_OAUTH",
 	})
 	brightcoveAuth := app.String(cli.StringOpt{
-		Name:   "brightcove-auth",
+		Name: "brightcove-auth",
+		// base64encoded value of 'clientId:clientSecret'
+		// e.g. "Basic Y2xpZW50SWQ6Y2xpZW50U2VjcmV0"
 		Value:  "",
 		Desc:   "brightcove OAUTH API authorization header",
 		EnvVar: "BRIGHTCOVE_AUTH",
@@ -172,9 +174,10 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
+		return
 	}
 
-	infoLogger.Printf("tid=[%v], Received notification: video: [%v]", transactionID, event.Video)
+	infoLogger.Printf("tid=[%v]. Received notification: video: [%v]", transactionID, event.Video)
 
 	video, err := bn.fetchVideo(event)
 	if err != nil {
