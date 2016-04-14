@@ -215,7 +215,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 		if err != nil {
 			return nil, err
 		}
-		infoLogger.Printf("Fetching video successful. Size: [%d]", len(v))
+		infoLogger.Printf("Fetching video [%s] successful.", v["id"])
 		return v, nil
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
@@ -244,7 +244,7 @@ func (bn brightcoveNotifier) fwdVideo(video video) error {
 		msg, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("Status code 400. [%s]", string(msg[:]))
 	case 200:
-		infoLogger.Println("Forwarding video successful.")
+		infoLogger.Printf("Forwarding video [%s] successful.", video["id"])
 		return nil
 	default:
 		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
