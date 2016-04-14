@@ -123,6 +123,8 @@ func main() {
 		client: &http.Client{},
 	}
 
+	infoLogger.Println(bn.prettyPrint())
+
 	app.Action = func() {
 		go bn.listen()
 		ch := make(chan os.Signal)
@@ -323,4 +325,16 @@ func initLogs(infoHandle io.Writer, warnHandle io.Writer, errorHandle io.Writer)
 	infoLogger = log.New(infoHandle, "INFO  - ", logPattern)
 	warnLogger = log.New(warnHandle, "WARN  - ", logPattern)
 	errorLogger = log.New(errorHandle, "ERROR - ", logPattern)
+}
+
+func (bn brightcoveNotifier) prettyPrint() string {
+	return fmt.Sprintf("Config: [\n\tport: [%d]\n\tbrightcoveConf: [%s]\n\tcmsNotifierConf: [%s]\n]", bn.port, bn.brightcoveConf.prettyPrint(), bn.cmsNotifierConf.prettyPrint())
+}
+
+func (bc brightcoveConfig) prettyPrint() string {
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\thcAddr: [%s]\n\t\thcAccID: [%s]\n\t", bc.addr, bc.oauthAddr, bc.hcAddr, bc.hcAccID)
+}
+
+func (cnc cmsNotifierConfig) prettyPrint() string {
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t", cnc.addr)
 }
