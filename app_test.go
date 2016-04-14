@@ -165,7 +165,7 @@ func TestHandleNotification_IntegrationTest_Return200StatusCode(t *testing.T) {
 		addr: ts.URL + "/accounts/%s/videos/%s",
 	}
 	bn.cmsNotifierConf = &cmsNotifierConfig{
-		addr: ts.URL + "/cms-notifier/notify",
+		addr: ts.URL + "/cms-notifier",
 	}
 
 	res, err := http.Post(ts.URL+"/notify", "application/json", bytes.NewReader([]byte(buildTestVideoEvent(accID, videoID))))
@@ -209,7 +209,7 @@ func TestHandleNotification_IntegrationTest_VideoModelWithUUIDReachesCMSNotifier
 		addr: ts.URL + "/accounts/%s/videos/%s",
 	}
 	bn.cmsNotifierConf = &cmsNotifierConfig{
-		addr: ts.URL + "/cms-notifier/notify",
+		addr: ts.URL + "/cms-notifier",
 	}
 
 	res, err := http.Post(ts.URL+"/notify", "application/json", bytes.NewReader([]byte(buildTestVideoEvent(accID, videoID))))

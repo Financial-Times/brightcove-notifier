@@ -44,6 +44,10 @@ type brightcoveConfig struct {
 	//Brightcove OAuth API access token endpoint
 	oauthAddr string
 	auth      string
+
+	//endpoint and accountID used for healthchecks
+	hcAddr  string
+	hcAccID string
 }
 
 type cmsNotifierConfig struct {
@@ -78,9 +82,21 @@ func main() {
 		Desc:   "brightcove OAUTH API authorization header",
 		EnvVar: "BRIGHTCOVE_AUTH",
 	})
+	brightcoveHCAccID := app.String(cli.StringOpt{
+		Name:   "brightcove-hc-account-id",
+		Value:  "",
+		Desc:   "brightcove account id used for health check",
+		EnvVar: "BRIGHTCOVE_HC_ACCOUNT_ID",
+	})
+	brightcoveHCAddr := app.String(cli.StringOpt{
+		Name:   "brightcove-hc-addr",
+		Value:  fmt.Sprintf("https://cms.api.brightcove.com/v1/accounts/%s/counts/videos", *brightcoveHCAccID),
+		Desc:   "brightcove endpoint used for health check",
+		EnvVar: "BRIGHTCOVE_HC_ADDR",
+	})
 	cmsNotifier := app.String(cli.StringOpt{
 		Name:   "cms-notifier",
-		Value:  "http://localhost:13080/notify",
+		Value:  "http://localhost:13080",
 		Desc:   "cms notifier address",
 		EnvVar: "CMS_NOTIFIER",
 	})
@@ -97,6 +113,8 @@ func main() {
 			addr:      *brightcove,
 			oauthAddr: *brightcoveOAuth,
 			auth:      *brightcoveAuth,
+			hcAddr:    *brightcoveHCAddr,
+			hcAccID:   *brightcoveHCAccID,
 		},
 		cmsNotifierConf: &cmsNotifierConfig{
 			addr: *cmsNotifier,
@@ -121,7 +139,7 @@ func main() {
 func (bn brightcoveNotifier) listen() {
 	r := mux.NewRouter()
 	r.HandleFunc("/notify", bn.handleNotification).Methods("POST")
-	r.HandleFunc("/__health", bn.health).Methods("GET")
+	r.HandleFunc("/__health", bn.health()).Methods("GET")
 	r.HandleFunc("/__gtg", bn.gtg).Methods("GET")
 
 	http.Handle("/", r)
@@ -232,7 +250,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr, bytes.NewReader(videoJSON))
+	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr+"/notify", bytes.NewReader(videoJSON))
 	if err != nil {
 		return err
 	}
@@ -300,10 +318,6 @@ func cleanupResp(resp *http.Response) {
 		warnLogger.Printf("[%v]", err)
 	}
 }
-
-func (bn brightcoveNotifier) health(w http.ResponseWriter, r *http.Request) {}
-
-func (bn brightcoveNotifier) gtg(w http.ResponseWriter, r *http.Request) {}
 
 func initLogs(infoHandle io.Writer, warnHandle io.Writer, errorHandle io.Writer) {
 	infoLogger = log.New(infoHandle, "INFO  - ", logPattern)
