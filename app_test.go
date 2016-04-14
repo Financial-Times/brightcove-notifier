@@ -111,7 +111,7 @@ func TestFwdVideo_RequestContainsXOriginSystemHeader(t *testing.T) {
 	}
 
 	video := make(map[string]interface{})
-	err := bn.fwdVideo(video)
+	err := bn.fwdVideo(video, "tid_test")
 	if err != nil {
 		t.Fatalf("Expected success. Received: [%v]", err)
 	}

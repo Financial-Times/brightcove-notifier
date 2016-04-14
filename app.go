@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Financial-Times/transactionid-utils-go"
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"github.com/pborman/uuid"
@@ -145,35 +146,39 @@ func (ve videoEvent) String() string {
 }
 
 func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {
-	var event videoEvent
+	transactionID := transactionidutils.GetTransactionIDFromRequest(r)
 
+	var event videoEvent
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
-		warnLogger.Printf("[%v]", err)
+		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 	}
 
-	infoLogger.Printf("Received: [%v]", event)
+	infoLogger.Printf("tid=[%v], Received notification: video: [%v]", transactionID, event.Video)
 
 	video, err := bn.fetchVideo(event)
 	if err != nil {
-		warnLogger.Printf("Fetching video: [%v]", err)
+		warnLogger.Printf("tid=[%v]. Fetching video: [%v]", transactionID, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
 
 	err = generateUUIDAndAddToPayload(video)
 	if err != nil {
-		warnLogger.Printf("[%v]", err)
+		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	infoLogger.Printf("tid=[%v]. Generated uuid [%v] for video [%v].", transactionID, video["uuid"], video["id"])
 
-	err = bn.fwdVideo(video)
+	err = bn.fwdVideo(video, transactionID)
 	if err != nil {
-		warnLogger.Printf("Forwarding video: [%v]", err)
+		warnLogger.Printf("tid=[%v]. Forwarding video: [%v]", transactionID, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
 }
 
 func generateUUIDAndAddToPayload(video video) error {
@@ -215,7 +220,6 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 		if err != nil {
 			return nil, err
 		}
-		infoLogger.Printf("Fetching video [%s] successful.", v["id"])
 		return v, nil
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
@@ -223,7 +227,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 
 }
 
-func (bn brightcoveNotifier) fwdVideo(video video) error {
+func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	videoJSON, err := json.Marshal(video)
 	if err != nil {
 		return err
@@ -233,6 +237,7 @@ func (bn brightcoveNotifier) fwdVideo(video video) error {
 		return err
 	}
 	req.Header.Add("X-Origin-System-Id", "brightcove")
+	req.Header.Add("X-Request-Id", tid)
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	resp, err := bn.client.Do(req)
 	if err != nil {
@@ -244,7 +249,6 @@ func (bn brightcoveNotifier) fwdVideo(video video) error {
 		msg, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("Status code 400. [%s]", string(msg[:]))
 	case 200:
-		infoLogger.Printf("Forwarding video [%s] successful.", video["id"])
 		return nil
 	default:
 		return fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
