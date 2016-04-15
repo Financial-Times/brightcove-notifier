@@ -40,14 +40,11 @@ type brightcoveNotifier struct {
 type brightcoveConfig struct {
 	addr        string
 	accessToken string
+	accountID   string
 
 	//Brightcove OAuth API access token endpoint
 	oauthAddr string
 	auth      string
-
-	//endpoint and accountID used for healthchecks
-	hcAddr  string
-	hcAccID string
 }
 
 type cmsNotifierConfig struct {
@@ -66,7 +63,7 @@ func main() {
 	brightcove := app.String(cli.StringOpt{
 		Name: "brightcove",
 		// https://cms.api.brightcove.com/v1/accounts/:account_id/videos/:video_id
-		Value:  "https://cms.api.brightcove.com/v1/accounts/%s/videos/%s",
+		Value:  "https://cms.api.brightcove.com/v1/accounts/",
 		Desc:   "brightcove video api address",
 		EnvVar: "BRIGHTCOVE",
 	})
@@ -84,17 +81,11 @@ func main() {
 		Desc:   "brightcove OAUTH API authorization header",
 		EnvVar: "BRIGHTCOVE_AUTH",
 	})
-	brightcoveHCAccID := app.String(cli.StringOpt{
-		Name:   "brightcove-hc-account-id",
+	brightcoveAccID := app.String(cli.StringOpt{
+		Name:   "brightcove-account-id",
 		Value:  "",
-		Desc:   "brightcove account id used for health check",
-		EnvVar: "BRIGHTCOVE_HC_ACCOUNT_ID",
-	})
-	brightcoveHCAddr := app.String(cli.StringOpt{
-		Name:   "brightcove-hc-addr",
-		Value:  fmt.Sprintf("https://cms.api.brightcove.com/v1/accounts/%s/counts/videos", *brightcoveHCAccID),
-		Desc:   "brightcove endpoint used for health check",
-		EnvVar: "BRIGHTCOVE_HC_ADDR",
+		Desc:   "brightcove account id: the account with the video events this app gets notified",
+		EnvVar: "BRIGHTCOVE_ACCOUNT_ID",
 	})
 	cmsNotifier := app.String(cli.StringOpt{
 		Name:   "cms-notifier",
@@ -115,8 +106,7 @@ func main() {
 			addr:      *brightcove,
 			oauthAddr: *brightcoveOAuth,
 			auth:      *brightcoveAuth,
-			hcAddr:    *brightcoveHCAddr,
-			hcAccID:   *brightcoveHCAccID,
+			accountID: *brightcoveAccID,
 		},
 		cmsNotifierConf: &cmsNotifierConfig{
 			addr: *cmsNotifier,
@@ -125,9 +115,8 @@ func main() {
 		client: &http.Client{},
 	}
 
-	infoLogger.Println(bn.prettyPrint())
-
 	app.Action = func() {
+		infoLogger.Println(bn.prettyPrint())
 		go bn.listen()
 		ch := make(chan os.Signal)
 		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -177,7 +166,7 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	infoLogger.Printf("tid=[%v]. Received notification: video: [%v]", transactionID, event.Video)
+	infoLogger.Printf("tid=[%v]. Received notification: video: [%v], accountID: [%v]", transactionID, event.Video, event.AccountID)
 
 	video, err := bn.fetchVideo(event)
 	if err != nil {
@@ -216,7 +205,7 @@ func generateUUIDAndAddToPayload(video video) error {
 type video map[string]interface{}
 
 func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf(bn.brightcoveConf.addr, ve.AccountID, ve.Video), nil)
+	req, err := http.NewRequest("GET", bn.brightcoveConf.addr+ve.AccountID+"/videos/"+ve.Video, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +324,7 @@ func (bn brightcoveNotifier) prettyPrint() string {
 }
 
 func (bc brightcoveConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\thcAddr: [%s]\n\t\thcAccID: [%s]\n\t", bc.addr, bc.oauthAddr, bc.hcAddr, bc.hcAccID)
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\taccountID: [%s]\n\t", bc.addr, bc.oauthAddr, bc.accountID)
 }
 
 func (cnc cmsNotifierConfig) prettyPrint() string {

@@ -162,7 +162,7 @@ func TestHandleNotification_IntegrationTest_Return200StatusCode(t *testing.T) {
 
 	}))
 	bn.brightcoveConf = &brightcoveConfig{
-		addr: ts.URL + "/accounts/%s/videos/%s",
+		addr: ts.URL + "/accounts/",
 	}
 	bn.cmsNotifierConf = &cmsNotifierConfig{
 		addr: ts.URL + "/cms-notifier",
@@ -206,7 +206,7 @@ func TestHandleNotification_IntegrationTest_VideoModelWithUUIDReachesCMSNotifier
 		}
 	}))
 	bn.brightcoveConf = &brightcoveConfig{
-		addr: ts.URL + "/accounts/%s/videos/%s",
+		addr: ts.URL + "/accounts/",
 	}
 	bn.cmsNotifierConf = &cmsNotifierConfig{
 		addr: ts.URL + "/cms-notifier",

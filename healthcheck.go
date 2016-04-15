@@ -63,7 +63,7 @@ func (bn brightcoveNotifier) brightcoveAPIReachable() fthealth.Check {
 }
 
 func (bn brightcoveNotifier) checkBrightcoveAPIReachable() error {
-	req, err := http.NewRequest("GET", bn.brightcoveConf.hcAddr, nil)
+	req, err := http.NewRequest("GET", bn.brightcoveConf.addr+bn.brightcoveConf.accountID+"/counts/videos", nil)
 	if err != nil {
 		return err
 	}
