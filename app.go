@@ -78,7 +78,7 @@ func main() {
 		// base64encoded value of 'clientId:clientSecret'
 		// e.g. "Basic Y2xpZW50SWQ6Y2xpZW50U2VjcmV0"
 		Value:  "",
-		Desc:   "brightcove OAUTH API authorization header",
+		Desc:   "brightcove oauth api authorization header",
 		EnvVar: "BRIGHTCOVE_AUTH",
 	})
 	brightcoveAccID := app.String(cli.StringOpt{
