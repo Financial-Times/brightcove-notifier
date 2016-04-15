@@ -157,7 +157,7 @@ func TestHandleNotification_IntegrationTest_Return200StatusCode(t *testing.T) {
 		case "/cms-notifier/notify":
 			//do nothing, just return 200
 		default:
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 		}
 
 	}))
@@ -202,7 +202,7 @@ func TestHandleNotification_IntegrationTest_VideoModelWithUUIDReachesCMSNotifier
 				_, _ = w.Write([]byte(err.Error()))
 			}
 		default:
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
 	bn.brightcoveConf = &brightcoveConfig{
