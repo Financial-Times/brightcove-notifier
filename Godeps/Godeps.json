@@ -1,7 +1,16 @@
 {
 	"ImportPath": "github.com/Financial-Times/brightcove-notifier",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
 	"Deps": [
+		{
+			"ImportPath": "github.com/Financial-Times/go-fthealth",
+			"Rev": "a40873379e5d06a84a833394021a926ae4abf789"
+		},
+		{
+			"ImportPath": "github.com/Financial-Times/transactionid-utils-go",
+			"Rev": "a2b1163e7c2f6c77add74ca2c7fc7422323a2d78"
+		},
 		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -13,6 +22,15 @@
 		{
 			"ImportPath": "github.com/jawher/mow.cli",
 			"Rev": "5791680041867a1ba02dba484d050ad44596a55e"
+		},
+		{
+			"ImportPath": "github.com/pborman/uuid",
+			"Comment": "v1.0-11-gc55201b",
+			"Rev": "c55201b036063326c5b1b89ccfe45a184973d073"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
 		}
 	]
 }
