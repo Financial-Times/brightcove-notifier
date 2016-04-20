@@ -166,7 +166,11 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	infoLogger.Printf("tid=[%v]. Received notification: video: [%v], accountID: [%v]", transactionID, event.Video, event.AccountID)
+	if bn.brightcoveConf.accountID != event.AccountID {
+		warnLogger.Printf("tid=[%v]. Invalid notification event received. Unexpected accountID: [%v]. Ignoring...", transactionID, event.AccountID)
+		return
+	}
+	infoLogger.Printf("tid=[%v]. Received notification event for video: [%v]", transactionID, event.Video)
 
 	video, err := bn.fetchVideo(event)
 	if err != nil {
@@ -205,7 +209,7 @@ func generateUUIDAndAddToPayload(video video) error {
 type video map[string]interface{}
 
 func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
-	req, err := http.NewRequest("GET", bn.brightcoveConf.addr+ve.AccountID+"/videos/"+ve.Video, nil)
+	req, err := http.NewRequest("GET", bn.brightcoveConf.addr+bn.brightcoveConf.accountID+"/videos/"+ve.Video, nil)
 	if err != nil {
 		return nil, err
 	}
