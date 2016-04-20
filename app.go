@@ -229,6 +229,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 		}
 		return bn.fetchVideo(ve)
 	case 404:
+		//TODO clarify logic around unpublishing & deleting videos
 		fallthrough
 	case 200:
 		var v video
