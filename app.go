@@ -222,6 +222,7 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 	defer cleanupResp(resp)
 	switch resp.StatusCode {
 	case 401:
+		infoLogger.Println("Renewing access token.")
 		err = bn.renewAccessToken()
 		if err != nil {
 			errorLogger.Printf("Video publishing won't work. Renewing access token failure: [%v].", err)
