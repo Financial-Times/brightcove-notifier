@@ -59,11 +59,17 @@ curl localhost:8080/notify -X POST -d @videoEvent.json -i
 ```
 
 ###Heroku
+Sometimes it's handy to test against the Brightcove Notifications API directly.
+To create a public endpoint the most easy way is to deploy your app in Heroku. 
+Assuming you have an account create the Procfile and run godep:
 
-TODO
+1. ```echo "web: brightcove-notifier" > Procfile```
 
-//Deploy and run app in Heroku, register app with Brightcove Notification API
+1. ```godep save ./...``` 
 
+1. Commit your changes, then push to heroku
+
+Now you have a public endpoint, you can use the FT Development account to register this endpoint with Brightcove Notifications API
 
 ##Brightcove Integration
 

@@ -162,7 +162,7 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	var event videoEvent
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
+		warnLogger.Printf("tid=[%v]. Invalid request received: [%v]", transactionID, err)
 		return
 	}
 
