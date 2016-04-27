@@ -5,7 +5,6 @@ class brightcove_notifier {
   $binary_file = "$install_dir/$binary_name"
   $log_dir = "/var/log/apps"
   $brightcove_acc_id = hiera('brightcoveAccID')
-  $brightcove_addr = hiera('brightcoveAddr')
   $brightcove_auth = hiera('brightcoveAuth')
   $cms_notifier_addr = hiera('cmsNotifierAddr')
 
@@ -37,7 +36,6 @@ class brightcove_notifier {
     command     => "supervisorctl restart $binary_name",
     environment => [
       "BRIGHTCOVE_ACCOUNT_ID=$brightcove_acc_id",
-      "BRIGHTCOVE=$brightcove_addr",
       "BRIGHTCOVE_AUTH='$brightcove_auth'",
       "CMS_NOTIFIER=$cms_notifier_addr"
     ],
