@@ -53,7 +53,7 @@ videoEvent.json
 }
 ```
 
-curl request
+request
 ```bash
 curl localhost:8080/notify -X POST -d @videoEvent.json -i
 ```
@@ -69,7 +69,7 @@ Assuming you have an account create the Procfile and run godep:
 
 1. Commit your changes, then push to heroku
 
-Now you have a public endpoint, you can use the FT Development account to register this endpoint with Brightcove Notifications API
+Now you have a public endpoint, you can use the FT Development account to register this endpoint with Brightcove Notifications API. Once you've done with testing, please unregister your endpoint from Brightcove.
 
 ##Brightcove Integration
 
@@ -86,7 +86,7 @@ List of used Brightcove API endpoints (please keep this list updated):
 1. [Get Video by ID](http://docs.brightcove.com/en/video-cloud/cms-api/references/cms-api/versions/v1/index.html#api-videoGroup-Get_Video_by_ID_or_Reference_ID)
 1. [Get Video Count - used in healthcheck](http://docs.brightcove.com/en/video-cloud/cms-api/references/cms-api/versions/v1/index.html#api-videoGroup-Get_Video_Count)
 1. [Creating notification subscription - called once, manually, before deployment](http://docs.brightcove.com/en/video-cloud/cms-api/references/cms-api/versions/v1/index.html#api-notificationGroup-Create_Subscription)
-
+1. [OAuth API Renewing Access Token](http://docs.brightcove.com/en/video-cloud/oauth-api/reference/versions/v4/index.html)
 
 ##Reference
 
