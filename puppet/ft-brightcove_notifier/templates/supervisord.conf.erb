@@ -21,7 +21,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 serverurl=unix:///var/run/supervisor.sock ; use a unix:// URL  for a unix socket
 
 [program:<%= @binary_name %>]
-environment=BRIGHTCOVE_ACCOUNT_ID=<%= @brightcove_acc_id %>,BRIGHTCOVE_AUTH=<%= @brightcove_auth %>,CMS_NOTIFIER=<%= @cms_notifier_addr%>
+environment=BRIGHTCOVE_ACCOUNT_ID=<%= @brightcove_acc_id %>,BRIGHTCOVE_AUTH="<%= @brightcove_auth %>",CMS_NOTIFIER=<%= @cms_notifier_addr%>
 command=<%= @binary_file %>
 autorestart=true
 startsecs=20
