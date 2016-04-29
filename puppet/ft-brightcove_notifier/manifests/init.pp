@@ -36,11 +36,6 @@ class brightcove_notifier {
 
   exec { 'restart_app':
     command     => "supervisorctl restart $binary_name",
-    environment => [
-      "BRIGHTCOVE_ACCOUNT_ID=$brightcove_acc_id",
-      "BRIGHTCOVE_AUTH='$brightcove_auth'",
-      "CMS_NOTIFIER=$cms_notifier_addr"
-    ],
     path        => "/usr/bin:/usr/sbin:/bin",
     subscribe   => [
       File[$binary_file],
