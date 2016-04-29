@@ -12,6 +12,8 @@ class brightcove_notifier {
   class { "${module_name}::monitoring": }
   class { "${module_name}::supervisord": }
 
+  Class['common_pp_up'] -> Class["${module_name}::monitoring"] -> Class["${module_name}::supervisord"]
+
   user { $binary_name:
     ensure    => present,
   }
