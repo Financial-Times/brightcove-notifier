@@ -172,7 +172,7 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	}
 	infoLogger.Printf("tid=[%v]. Received notification event for video: [%v]", transactionID, event.Video)
 
-	video, err := bn.fetchVideo(event)
+	video, err := bn.fetchVideo(event, transactionID)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. Fetching video: [%v]", transactionID, err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -208,7 +208,7 @@ func generateUUIDAndAddToPayload(video video) error {
 
 type video map[string]interface{}
 
-func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
+func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error) {
 	req, err := http.NewRequest("GET", bn.brightcoveConf.addr+bn.brightcoveConf.accountID+"/videos/"+ve.Video, nil)
 	if err != nil {
 		return nil, err
@@ -222,13 +222,13 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent) (video, error) {
 	defer cleanupResp(resp)
 	switch resp.StatusCode {
 	case 401:
-		infoLogger.Println("Renewing access token.")
+		infoLogger.Printf("tid=[%s]. Renewing access token.", tid)
 		err = bn.renewAccessToken()
 		if err != nil {
-			errorLogger.Printf("Video publishing won't work. Renewing access token failure: [%v].", err)
-			return nil, err
+			e := fmt.Errorf("Renewing access token failure: [%v].", err)
+			return nil, e
 		}
-		return bn.fetchVideo(ve)
+		return bn.fetchVideo(ve, tid)
 	case 404:
 		//TODO clarify logic around unpublishing & deleting videos
 		fallthrough
@@ -281,7 +281,7 @@ type accessTokenResp struct {
 	Expires     int    `json:"expires_in"`
 }
 
-func (bn brightcoveNotifier) renewAccessToken() error {
+func (bn brightcoveNotifier) renewAccessToken() (err error) {
 	req, err := http.NewRequest("POST", bn.brightcoveConf.oauthAddr, bytes.NewReader([]byte(tokenRequest)))
 	if err != nil {
 		return err

@@ -122,9 +122,11 @@ func (hc brightcoveAPIAccessTokenHealthCheck) checkBrightcoveAPIReturnsValidAcce
 
 	switch resp.StatusCode {
 	case 401:
+		infoLogger.Println("Renewing access token.")
 		err = hc.bn.renewAccessToken()
 		if err != nil {
 			err = fmt.Errorf("Video publishing won't work. Renewing access token failure: [%v].", err)
+			warnLogger.Println(err)
 			return err
 		}
 		hc.calls++
