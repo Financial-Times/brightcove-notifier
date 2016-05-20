@@ -132,6 +132,7 @@ func main() {
 func (bn brightcoveNotifier) listen() {
 	r := mux.NewRouter()
 	r.HandleFunc("/notify", bn.handleNotification).Methods("POST")
+	r.HandleFunc("/force-notify/{id}", bn.handleForceNotification).Methods("POST")
 	r.HandleFunc("/__health", bn.health()).Methods("GET")
 	r.HandleFunc("/__gtg", bn.gtg).Methods("GET")
 
@@ -154,6 +155,34 @@ type videoEvent struct {
 func (ve videoEvent) String() string {
 	return fmt.Sprintf("videoEvent: TimeStamp: [%s], AccountId: [%s], Event: [%s], Video: [%s], Version: [%d]",
 		time.Unix(0, ve.TimeStamp*int64(time.Millisecond)).Format(time.RFC3339), ve.AccountID, ve.Event, ve.Video, ve.Version)
+}
+
+func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *http.Request) {
+	transactionID := transactionidutils.GetTransactionIDFromRequest(r)
+
+	video, err := bn.fetchVideo(videoEvent{Video: mux.Vars(r)["id"]}, transactionID)
+	if err != nil {
+		warnLogger.Printf("tid=[%v]. Fetching video: [%v]", transactionID, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
+
+	err = generateUUIDAndAddToPayload(video)
+	if err != nil {
+		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	infoLogger.Printf("tid=[%v]. Generated uuid [%v] for video [%v].", transactionID, video["uuid"], video["id"])
+
+	err = bn.fwdVideo(video, transactionID)
+	if err != nil {
+		warnLogger.Printf("tid=[%v]. Forwarding video: [%v]", transactionID, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
 }
 
 func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {

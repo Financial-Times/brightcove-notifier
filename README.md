@@ -30,6 +30,9 @@ Usage:
 * /notify
 
 POST endpoint (registered with Brightcove CMS Notifications API)
+* /force-notify/{videoID}
+
+POST endpoint (useful for forcing video model publishes)
 * /__health
 
 GET endpoint (FT standard)
