@@ -100,22 +100,21 @@ func main() {
 		EnvVar: "CMS_NOTIFIER_AUTH",
 	})
 
-	bn := &brightcoveNotifier{
-		port: *port,
-		brightcoveConf: &brightcoveConfig{
-			addr:      *brightcove,
-			oauthAddr: *brightcoveOAuth,
-			auth:      *brightcoveAuth,
-			accountID: *brightcoveAccID,
-		},
-		cmsNotifierConf: &cmsNotifierConfig{
-			addr: *cmsNotifier,
-			auth: *cmsNotifierAuth,
-		},
-		client: &http.Client{},
-	}
-
 	app.Action = func() {
+		bn := &brightcoveNotifier{
+			port: *port,
+			brightcoveConf: &brightcoveConfig{
+				addr:      *brightcove,
+				oauthAddr: *brightcoveOAuth,
+				auth:      *brightcoveAuth,
+				accountID: *brightcoveAccID,
+			},
+			cmsNotifierConf: &cmsNotifierConfig{
+				addr: *cmsNotifier,
+				auth: *cmsNotifierAuth,
+			},
+			client: &http.Client{},
+		}
 		infoLogger.Println(bn.prettyPrint())
 		go bn.listen()
 		ch := make(chan os.Signal)
