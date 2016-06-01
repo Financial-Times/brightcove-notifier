@@ -138,7 +138,7 @@ func TestGenerateUUIDAndAddToPayload_IDDoesNotExists_ErrorIsReturned(t *testing.
 	}
 }
 
-func TestHandleNotification_IntegrationTest_Return200StatusCode(t *testing.T) {
+func TestHandleNotification_Integration_Return200StatusCode(t *testing.T) {
 	accID := "775205503001"
 	videoID := "4020894387001"
 	bn := &brightcoveNotifier{
@@ -178,7 +178,7 @@ func TestHandleNotification_IntegrationTest_Return200StatusCode(t *testing.T) {
 	}
 }
 
-func TestHandleNotification_IntegrationTest_VideoModelWithUUIDReachesCMSNotifier(t *testing.T) {
+func TestHandleNotification_Integration_VideoModelWithUUIDReachesCMSNotifier(t *testing.T) {
 	accID := "775205503001"
 	videoID := "4020894387001"
 	testVideoModel := buildTestVideoModel(accID, videoID)
@@ -223,6 +223,78 @@ func TestHandleNotification_IntegrationTest_VideoModelWithUUIDReachesCMSNotifier
 			t.Errorf("[%v]", err)
 		}
 		t.Fatalf("Expected success. Received status code: [%d]. Response body: [%s]", res.StatusCode, string(msgBytes))
+	}
+}
+
+func TestFetchVideo_404VideoNotFound_VideoIdAndNotFoundMessageIsPresent(t *testing.T) {
+	testVideoNotFoundModel := `[{ "error_code": "RESOURCE_NOT_FOUND" }]`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, err := w.Write([]byte(testVideoNotFoundModel))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	bn := &brightcoveNotifier{
+		client: &http.Client{},
+		brightcoveConf: &brightcoveConfig{
+			addr: ts.URL,
+		},
+	}
+
+	videoID := "4020894387001"
+	v, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
+	if err != nil {
+		t.Fatalf("Expected success. Received error: [%v]", err)
+	}
+	if v["id"] != videoID || v["error_code"] != "RESOURCE_NOT_FOUND" {
+		t.Fatalf("Unexpected id or error_code. Found: [%#v]", v)
+	}
+}
+
+func TestFetchVideo_404ButUnmarshallableResponse_ErrorIsReturned(t *testing.T) {
+	testVideoNotFoundModel := `[ "error_code", "RESOURCE_NOT_FOUND" ]`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, err := w.Write([]byte(testVideoNotFoundModel))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	bn := &brightcoveNotifier{
+		client: &http.Client{},
+		brightcoveConf: &brightcoveConfig{
+			addr: ts.URL,
+		},
+	}
+
+	videoID := "4020894387001"
+	_, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
+	if err == nil {
+		t.Fatalf("Expected failure. Received error: [%v]", err)
+	}
+}
+
+func TestFetchVideo_404ButUnexpectedResponse_ErrorIsReturned(t *testing.T) {
+	testVideoNotFoundModel := `[]`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, err := w.Write([]byte(testVideoNotFoundModel))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	bn := &brightcoveNotifier{
+		client: &http.Client{},
+		brightcoveConf: &brightcoveConfig{
+			addr: ts.URL,
+		},
+	}
+
+	videoID := "4020894387001"
+	_, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
+	if err == nil {
+		t.Fatalf("Expected failure. Received error: [%v]", err)
 	}
 }
 
