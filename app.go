@@ -258,8 +258,16 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error
 		}
 		return bn.fetchVideo(ve, tid)
 	case 404:
-		//TODO clarify logic around unpublishing & deleting videos
-		fallthrough
+		var not_found []map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&not_found)
+		if err != nil {
+			return nil, err
+		}
+		if len(not_found) == 0 {
+			return nil, fmt.Errorf("Unexpected 404 response. Zero-length array received.")
+		}
+		not_found[0]["id"] = ve.Video
+		return not_found[0], nil
 	case 200:
 		var v video
 		err = json.NewDecoder(resp.Body).Decode(&v)
