@@ -117,10 +117,10 @@ func TestFwdVideo_RequestContainsXOriginSystemHeader(t *testing.T) {
 	}
 }
 
-func TestGenerateUUIDAndAddToPayload_IDExists_ValidUUIDIsAddedToThePayload(t *testing.T) {
+func TestAddUPPRequiredFields_IDExists_ValidUUIDIsAddedToThePayload(t *testing.T) {
 	video := make(map[string]interface{})
 	video["id"] = "4492075574001"
-	err := generateUUIDAndAddToPayload(video)
+	err := addUPPRequiredFields(video)
 	if err != nil {
 		t.Fatalf("[%v]", err)
 	}
@@ -129,12 +129,24 @@ func TestGenerateUUIDAndAddToPayload_IDExists_ValidUUIDIsAddedToThePayload(t *te
 	}
 }
 
-func TestGenerateUUIDAndAddToPayload_IDDoesNotExists_ErrorIsReturned(t *testing.T) {
+func TestAddUPPRequiredFields_IDDoesNotExists_ErrorIsReturned(t *testing.T) {
 	video := make(map[string]interface{})
 	video["name"] = "foobar"
-	err := generateUUIDAndAddToPayload(video)
+	err := addUPPRequiredFields(video)
 	if err == nil {
 		t.Fatal("Expected failure")
+	}
+}
+
+func TestAddUPPRequiredFields_TypeIsAdded(t *testing.T) {
+	video := make(map[string]interface{})
+	video["id"] = "4492075574001"
+	err := addUPPRequiredFields(video)
+	if err != nil {
+		t.Fatalf("[%v]", err)
+	}
+	if typ, present := video["type"]; !present || typ != "video" {
+		t.Fatalf("Expected 'type' field to be set. Actual value: [%v]", typ)
 	}
 }
 

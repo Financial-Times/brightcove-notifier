@@ -167,7 +167,7 @@ func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *h
 	}
 	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
 
-	err = generateUUIDAndAddToPayload(video)
+	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -208,7 +208,7 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	}
 	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
 
-	err = generateUUIDAndAddToPayload(video)
+	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -225,12 +225,15 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
 }
 
-func generateUUIDAndAddToPayload(video video) error {
+func addUPPRequiredFields(video video) error {
+	//generate uuid
 	id, ok := video["id"].(string)
 	if !ok {
 		return fmt.Errorf("Invalid content, missing video ID.")
 	}
 	video["uuid"] = uuid.NewMD5(uuid.UUID{}, []byte(id)).String()
+
+	video["type"] = "video"
 	return nil
 }
 
