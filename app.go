@@ -292,6 +292,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
+	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
