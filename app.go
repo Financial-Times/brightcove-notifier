@@ -261,16 +261,16 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error
 		}
 		return bn.fetchVideo(ve, tid)
 	case 404:
-		var not_found []map[string]interface{}
-		err = json.NewDecoder(resp.Body).Decode(&not_found)
+		var notFound []map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&notFound)
 		if err != nil {
 			return nil, err
 		}
-		if len(not_found) == 0 {
+		if len(notFound) == 0 {
 			return nil, fmt.Errorf("Unexpected 404 response. Zero-length array received.")
 		}
-		not_found[0]["id"] = ve.Video
-		return not_found[0], nil
+		notFound[0]["id"] = ve.Video
+		return notFound[0], nil
 	case 200:
 		var v video
 		err = json.NewDecoder(resp.Body).Decode(&v)
