@@ -167,7 +167,7 @@ func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *h
 	}
 	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
 
-	err = generateUUIDAndAddToPayload(video)
+	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -208,7 +208,7 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	}
 	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
 
-	err = generateUUIDAndAddToPayload(video)
+	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -225,12 +225,15 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
 }
 
-func generateUUIDAndAddToPayload(video video) error {
+func addUPPRequiredFields(video video) error {
+	//generate uuid
 	id, ok := video["id"].(string)
 	if !ok {
 		return fmt.Errorf("Invalid content, missing video ID.")
 	}
 	video["uuid"] = uuid.NewMD5(uuid.UUID{}, []byte(id)).String()
+
+	video["type"] = "video"
 	return nil
 }
 
@@ -258,16 +261,16 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error
 		}
 		return bn.fetchVideo(ve, tid)
 	case 404:
-		var not_found []map[string]interface{}
-		err = json.NewDecoder(resp.Body).Decode(&not_found)
+		var notFound []map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&notFound)
 		if err != nil {
 			return nil, err
 		}
-		if len(not_found) == 0 {
+		if len(notFound) == 0 {
 			return nil, fmt.Errorf("Unexpected 404 response. Zero-length array received.")
 		}
-		not_found[0]["id"] = ve.Video
-		return not_found[0], nil
+		notFound[0]["id"] = ve.Video
+		return notFound[0], nil
 	case 200:
 		var v video
 		err = json.NewDecoder(resp.Body).Decode(&v)
@@ -278,7 +281,6 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
 	}
-
 }
 
 func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
@@ -290,6 +292,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
+	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
