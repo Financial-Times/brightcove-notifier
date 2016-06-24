@@ -164,7 +164,7 @@ func TestHandleNotification_Integration_Return200StatusCode(t *testing.T) {
 		case fetchPath:
 			_, err := w.Write([]byte(buildTestVideoModel(accID, videoID)))
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				warnLogger.Printf("Could not write response: [%v]", err)
 			}
 		case "/cms-notifier/notify":
 			//do nothing, just return 200
@@ -205,7 +205,7 @@ func TestHandleNotification_Integration_VideoModelWithUUIDReachesCMSNotifier(t *
 		case fetchPath:
 			_, err := w.Write([]byte(testVideoModel))
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				warnLogger.Printf("Could not write response: [%v]", err)
 			}
 		case "/cms-notifier/notify":
 			err := receivedVideoModelMatchesFetchedVideoAndUUIDIsPresent(w, r, []byte(testVideoModel))
@@ -293,7 +293,7 @@ func mockBrightcoveServer(mockVideoResponse string) *httptest.Server {
 		w.WriteHeader(http.StatusNotFound)
 		_, err := w.Write([]byte(mockVideoResponse))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			warnLogger.Printf("Can't write response: [%v]", err)
 		}
 	}))
 }
