@@ -239,21 +239,13 @@ func TestHandleNotification_Integration_VideoModelWithUUIDReachesCMSNotifier(t *
 }
 
 func TestFetchVideo_404VideoNotFound_VideoIdAndNotFoundMessageIsPresent(t *testing.T) {
-	testVideoNotFoundModel := `[{ "error_code": "RESOURCE_NOT_FOUND" }]`
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, err := w.Write([]byte(testVideoNotFoundModel))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
+	ts := mockBrightcoveServer(`[{ "error_code": "RESOURCE_NOT_FOUND" }]`)
 	bn := &brightcoveNotifier{
 		client: &http.Client{},
 		brightcoveConf: &brightcoveConfig{
 			addr: ts.URL,
 		},
 	}
-
 	videoID := "4020894387001"
 	v, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
 	if err != nil {
@@ -265,14 +257,7 @@ func TestFetchVideo_404VideoNotFound_VideoIdAndNotFoundMessageIsPresent(t *testi
 }
 
 func TestFetchVideo_404ButUnmarshallableResponse_ErrorIsReturned(t *testing.T) {
-	testVideoNotFoundModel := `[ "error_code", "RESOURCE_NOT_FOUND" ]`
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, err := w.Write([]byte(testVideoNotFoundModel))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
+	ts := mockBrightcoveServer(`[ "error_code", "RESOURCE_NOT_FOUND" ]`)
 	bn := &brightcoveNotifier{
 		client: &http.Client{},
 		brightcoveConf: &brightcoveConfig{
@@ -283,19 +268,12 @@ func TestFetchVideo_404ButUnmarshallableResponse_ErrorIsReturned(t *testing.T) {
 	videoID := "4020894387001"
 	_, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
 	if err == nil {
-		t.Fatalf("Expected failure. Received error: [%v]", err)
+		t.Fatalf("Expected failure")
 	}
 }
 
 func TestFetchVideo_404ButUnexpectedResponse_ErrorIsReturned(t *testing.T) {
-	testVideoNotFoundModel := `[]`
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_, err := w.Write([]byte(testVideoNotFoundModel))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
+	ts := mockBrightcoveServer(`[]`)
 	bn := &brightcoveNotifier{
 		client: &http.Client{},
 		brightcoveConf: &brightcoveConfig{
@@ -306,8 +284,18 @@ func TestFetchVideo_404ButUnexpectedResponse_ErrorIsReturned(t *testing.T) {
 	videoID := "4020894387001"
 	_, err := bn.fetchVideo(videoEvent{Video: videoID}, "tid_test")
 	if err == nil {
-		t.Fatalf("Expected failure. Received error: [%v]", err)
+		t.Fatalf("Expected failure")
 	}
+}
+
+func mockBrightcoveServer(mockVideoResponse string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, err := w.Write([]byte(mockVideoResponse))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
 }
 
 func receivedVideoModelMatchesFetchedVideoAndUUIDIsPresent(w http.ResponseWriter, r *http.Request, fetchedVideoModel []byte) error {

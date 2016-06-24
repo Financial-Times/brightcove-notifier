@@ -281,7 +281,6 @@ func (bn brightcoveNotifier) fetchVideo(ve videoEvent, tid string) (video, error
 	default:
 		return nil, fmt.Errorf("Invalid statusCode received: [%d]", resp.StatusCode)
 	}
-
 }
 
 func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
