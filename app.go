@@ -48,8 +48,9 @@ type brightcoveConfig struct {
 }
 
 type cmsNotifierConfig struct {
-	addr string
-	auth string
+	addr       string
+	auth 	   string
+	hostHeader string
 }
 
 func main() {
@@ -99,6 +100,12 @@ func main() {
 		Desc:   "cms notifier authorization header",
 		EnvVar: "CMS_NOTIFIER_AUTH",
 	})
+	cmsNotifierHostHeader := app.String(cli.StringOpt{
+		Name:   "cms-notifier-host-header",
+		Value:  "",
+		Desc:   "cms notifier host header",
+		EnvVar: "CMS_NOTIFIER_HOST_HEADER",
+	})
 
 	app.Action = func() {
 		bn := &brightcoveNotifier{
@@ -110,8 +117,9 @@ func main() {
 				accountID: *brightcoveAccID,
 			},
 			cmsNotifierConf: &cmsNotifierConfig{
-				addr: *cmsNotifier,
-				auth: *cmsNotifierAuth,
+				addr:       *cmsNotifier,
+				auth:       *cmsNotifierAuth,
+				hostHeader: *cmsNotifierHostHeader,
 			},
 			client: &http.Client{},
 		}
@@ -296,6 +304,9 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	if (bn.cmsNotifierConf.hostHeader != "") {
+		req.Header.Add("Host", bn.cmsNotifierConf.hostHeader)
+	}
 	resp, err := bn.client.Do(req)
 	if err != nil {
 		return err

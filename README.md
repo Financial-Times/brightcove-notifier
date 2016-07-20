@@ -12,6 +12,7 @@ export BRIGHTCOVE_AUTH="Basic ..."
 export CMS_NOTIFIER=https://xp-up.ft.com/__cms-notifier
 # not needed in UCS or locally
 export CMS_NOTIFIER_AUTH="Basic ..."
+export CMS_NOTIFIER_HOST_HEADER="cms-notifier"
 
 go build; ./brightcove-notifier
 
