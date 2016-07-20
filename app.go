@@ -306,6 +306,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	if (bn.cmsNotifierConf.hostHeader != "") {
 		req.Header.Add("Host", bn.cmsNotifierConf.hostHeader)
+		infoLogger.Printf("Adding host header %v to request...\n", bn.cmsNotifierConf.hostHeader)
 	}
 	resp, err := bn.client.Do(req)
 	if err != nil {
@@ -384,5 +385,5 @@ func (bc brightcoveConfig) prettyPrint() string {
 }
 
 func (cnc cmsNotifierConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t", cnc.addr)
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\thostHeader: [%s]\n\t", cnc.addr, cnc.hostHeader)
 }
