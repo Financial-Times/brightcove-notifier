@@ -296,7 +296,8 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr+"/notify", bytes.NewReader(videoJSON))
+	addr := bn.cmsNotifierConf.addr+"/notify"
+	req, err := http.NewRequest("POST", addr, bytes.NewReader(videoJSON))
 	if err != nil {
 		return err
 	}
@@ -306,7 +307,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	if (bn.cmsNotifierConf.hostHeader != "") {
 		req.Header.Add("Host", bn.cmsNotifierConf.hostHeader)
-		infoLogger.Printf("Adding host header %v to request...\n", bn.cmsNotifierConf.hostHeader)
+		infoLogger.Printf("Adding host header %v, tid %v, X-Origin-System-Id %v, Auth %v, to request to address %v...\n", req.Header.Get("Host"), req.Header.Get("X-Request-Id"), req.Header.Get("X-Origin-System-Id"), req.Header.Get("Authorization"), req.URL.String())
 	}
 	resp, err := bn.client.Do(req)
 	if err != nil {
