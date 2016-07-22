@@ -7,24 +7,16 @@ Receives Brightcove video notification events. Fetches video model, then creates
 ##Build & Run the binary
 
 ```bash
-export BRIGHTCOVE_ACCOUNT_ID=...
-export BRIGHTCOVE_AUTH="Basic ..."
-export CMS_NOTIFIER=https://xp-up.ft.com/__cms-notifier
-# not needed in UCS or locally
-export CMS_NOTIFIER_AUTH="Basic ..."
+export BRIGHTCOVE_AUTH="Basic YjY..."
+export BRIGHTCOVE_ACCOUNT_ID="47628783001"
+export CMS_NOTIFIER="https://pub-xp-up.ft.com/__cms-notifier"
 export CMS_NOTIFIER_HOST_HEADER="cms-notifier"
-
+export CMS_NOTIFIER_AUTH="Basic dXB..."
 go build; ./brightcove-notifier
 
 ```
 
 Look for the auth values in LastPass' UPP Shared Folder.
-
-Usage:
-```bash
-./brightcove-notifier help
-```
-
 
 ##Endpoints
 

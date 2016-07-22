@@ -304,10 +304,13 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
-	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	if (bn.cmsNotifierConf.auth != "") {
+		req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	}
 	if (bn.cmsNotifierConf.hostHeader != "") {
 		req.Header.Add("Host", bn.cmsNotifierConf.hostHeader)
-		infoLogger.Printf("Adding host header %v, tid %v, X-Origin-System-Id %v, Auth %v, to request to address %v...\n", req.Header.Get("Host"), req.Header.Get("X-Request-Id"), req.Header.Get("X-Origin-System-Id"), req.Header.Get("Authorization"), req.URL.String())
+		req.Host = bn.cmsNotifierConf.hostHeader
+		infoLogger.Printf("Adding host header %v, req.Host=%v, tid %v, X-Origin-System-Id %v, Auth %v, to request to address %v...\n", req.Header.Get("Host"),  req.Host, req.Header.Get("X-Request-Id"), req.Header.Get("X-Origin-System-Id"), req.Header.Get("Authorization"), req.URL.String())
 	}
 	resp, err := bn.client.Do(req)
 	if err != nil {
@@ -382,9 +385,21 @@ func (bn brightcoveNotifier) prettyPrint() string {
 }
 
 func (bc brightcoveConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\taccountID: [%s]\n\t", bc.addr, bc.oauthAddr, bc.accountID)
+	authSet := "empty"
+	if bc.auth != "" {
+		authSet = "set, not empty"
+	}
+	accessTokenSet := "empty"
+	if bc.accessToken != "" {
+		accessTokenSet = "set, not empty"
+	}
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\taccountID: [%s]\n\t\tauth: [%s]\n\t\taccessToken: [%s]\n\t", bc.addr, bc.oauthAddr, bc.accountID, authSet, accessTokenSet)
 }
 
 func (cnc cmsNotifierConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\thostHeader: [%s]\n\t", cnc.addr, cnc.hostHeader)
+	authSet := "empty"
+	if cnc.auth != "" {
+		authSet = "set, not empty"
+	}
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\thostHeader: [%s]\n\t\tauth: [%s]\n\t", cnc.addr, cnc.hostHeader, authSet)
 }
