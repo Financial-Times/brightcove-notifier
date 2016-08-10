@@ -49,7 +49,7 @@ type brightcoveConfig struct {
 
 type cmsNotifierConfig struct {
 	addr       string
-	auth 	   string
+	auth       string
 	hostHeader string
 }
 
@@ -296,7 +296,7 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
-	addr := bn.cmsNotifierConf.addr+"/notify"
+	addr := bn.cmsNotifierConf.addr + "/notify"
 	req, err := http.NewRequest("POST", addr, bytes.NewReader(videoJSON))
 	if err != nil {
 		return err
@@ -304,10 +304,10 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
-	if (bn.cmsNotifierConf.auth != "") {
+	if bn.cmsNotifierConf.auth != "" {
 		req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
 	}
-	if (bn.cmsNotifierConf.hostHeader != "") {
+	if bn.cmsNotifierConf.hostHeader != "" {
 		req.Host = bn.cmsNotifierConf.hostHeader
 	}
 	resp, err := bn.client.Do(req)

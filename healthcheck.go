@@ -39,7 +39,7 @@ func (bn brightcoveNotifier) checkCmsNotifierHealth() error {
 	if err != nil {
 		return err
 	}
-	if (bn.cmsNotifierConf.hostHeader != "") {
+	if bn.cmsNotifierConf.hostHeader != "" {
 		req.Header.Add("Host", bn.cmsNotifierConf.hostHeader)
 	}
 	req.Header.Add("Accept", "application/json")
