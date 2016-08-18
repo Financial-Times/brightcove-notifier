@@ -48,8 +48,9 @@ type brightcoveConfig struct {
 }
 
 type cmsNotifierConfig struct {
-	addr string
-	auth string
+	addr       string
+	auth       string
+	hostHeader string
 }
 
 func main() {
@@ -99,6 +100,12 @@ func main() {
 		Desc:   "cms notifier authorization header",
 		EnvVar: "CMS_NOTIFIER_AUTH",
 	})
+	cmsNotifierHostHeader := app.String(cli.StringOpt{
+		Name:   "cms-notifier-host-header",
+		Value:  "",
+		Desc:   "cms notifier host header",
+		EnvVar: "CMS_NOTIFIER_HOST_HEADER",
+	})
 
 	app.Action = func() {
 		bn := &brightcoveNotifier{
@@ -110,8 +117,9 @@ func main() {
 				accountID: *brightcoveAccID,
 			},
 			cmsNotifierConf: &cmsNotifierConfig{
-				addr: *cmsNotifier,
-				auth: *cmsNotifierAuth,
+				addr:       *cmsNotifier,
+				auth:       *cmsNotifierAuth,
+				hostHeader: *cmsNotifierHostHeader,
 			},
 			client: &http.Client{},
 		}
@@ -288,14 +296,20 @@ func (bn brightcoveNotifier) fwdVideo(video video, tid string) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", bn.cmsNotifierConf.addr+"/notify", bytes.NewReader(videoJSON))
+	addr := bn.cmsNotifierConf.addr + "/notify"
+	req, err := http.NewRequest("POST", addr, bytes.NewReader(videoJSON))
 	if err != nil {
 		return err
 	}
 	req.Header.Add("Content-type", "application/json")
 	req.Header.Add("X-Origin-System-Id", "brightcove")
 	req.Header.Add("X-Request-Id", tid)
-	req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	if bn.cmsNotifierConf.auth != "" {
+		req.Header.Add("Authorization", bn.cmsNotifierConf.auth)
+	}
+	if bn.cmsNotifierConf.hostHeader != "" {
+		req.Host = bn.cmsNotifierConf.hostHeader
+	}
 	resp, err := bn.client.Do(req)
 	if err != nil {
 		return err
@@ -369,9 +383,21 @@ func (bn brightcoveNotifier) prettyPrint() string {
 }
 
 func (bc brightcoveConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\taccountID: [%s]\n\t", bc.addr, bc.oauthAddr, bc.accountID)
+	authSet := "empty"
+	if bc.auth != "" {
+		authSet = "set, not empty"
+	}
+	accessTokenSet := "empty"
+	if bc.accessToken != "" {
+		accessTokenSet = "set, not empty"
+	}
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\toauthAddr: [%s]\n\t\taccountID: [%s]\n\t\tauth: [%s]\n\t\taccessToken: [%s]\n\t", bc.addr, bc.oauthAddr, bc.accountID, authSet, accessTokenSet)
 }
 
 func (cnc cmsNotifierConfig) prettyPrint() string {
-	return fmt.Sprintf("\n\t\taddr: [%s]\n\t", cnc.addr)
+	authSet := "empty"
+	if cnc.auth != "" {
+		authSet = "set, not empty"
+	}
+	return fmt.Sprintf("\n\t\taddr: [%s]\n\t\thostHeader: [%s]\n\t\tauth: [%s]\n\t", cnc.addr, cnc.hostHeader, authSet)
 }

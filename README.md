@@ -7,23 +7,16 @@ Receives Brightcove video notification events. Fetches video model, then creates
 ##Build & Run the binary
 
 ```bash
-export BRIGHTCOVE_ACCOUNT_ID=...
-export BRIGHTCOVE_AUTH="Basic ..."
-export CMS_NOTIFIER=https://xp-up.ft.com/__cms-notifier
-# not needed in UCS or locally
-export CMS_NOTIFIER_AUTH="Basic ..."
-
+export BRIGHTCOVE_AUTH="Basic YjY..."
+export BRIGHTCOVE_ACCOUNT_ID="47628783001"
+export CMS_NOTIFIER="https://pub-xp-up.ft.com/__cms-notifier"
+export CMS_NOTIFIER_HOST_HEADER="cms-notifier"
+export CMS_NOTIFIER_AUTH="Basic dXB..."
 go build; ./brightcove-notifier
 
 ```
 
 Look for the auth values in LastPass' UPP Shared Folder.
-
-Usage:
-```bash
-./brightcove-notifier help
-```
-
 
 ##Endpoints
 
@@ -77,10 +70,81 @@ Now you have a public endpoint, you can use the FT Development account to regist
 ##Brightcove Integration
 
 ###Obtain Client Credentials
-TODO
+```
+curl -i -XPOST \
+   -H"Authorization:Basic ..." \
+   -H"Content-Type:application/x-www-form-urlencoded" \
+   -d"grant_type=client_credentials" \
+   "https://oauth.brightcove.com/v3/access_token?client_id=2221711291001"
+```
+
+you get an access token that you can use for a few minutes:
+
+```
+{
+  "access_token": "AK5366ogmVGB-eix...",
+  "token_type": "Bearer",
+  "expires_in": 300
+}
+```
 
 ###Register notify endpoint with Brightcove Notification API
-TODO
+
+Let's say your client_id is 2221711291001. You could check your subscriptions:
+
+```
+curl -i \
+  -H "Authorization:Bearer AK5366ogmVGB-eix..." \
+  https://cms.api.brightcove.com/v1/accounts/2221711291001/subscriptions
+```
+
+It will give you a response like:
+
+```
+[
+  {
+    "service_account": "2221711291001",
+    "id": "5e831b0d-9d45-43b1-9464-86421e0feb4d",
+    "events": "video-change",
+    "endpoint": "https://pub-xp-up.ft.com/notification/brightcove/metadata"
+  },
+  {
+    "service_account": "2221711291001",
+    "id": "c456f1c2-f682-4a56-a276-93eab2075e87",
+    "events": "video-change",
+    "endpoint": "https://pub-xp-up.ft.com/notification/brightcove/content"
+  },
+  {
+    "service_account": "2221711291001",
+    "id": "7492891d-f012-46af-b571-060ae180bfbe",
+    "events": "video-change",
+    "endpoint": "https://brightcove-notifier-up-test.ft.com/notify"
+  }
+]
+```
+
+Then you can create a new subscription:
+
+```
+curl -i -XPOST \
+  -H "Authorization:Bearer AK5366oD..." \
+  -H"Content-Type:application/json" \
+  -d'{"endpoint":"https://pub-pre-prod-up.ft.com/notification/brightcove/content", "events":["video-change"]}' \
+  "https://cms.api.brightcove.com/v1/accounts/2221711291001/subscriptions"
+```
+
+```
+{
+  "service_account": "2221711291001",
+  "id": "a35aa9c7-cefa-40dd-9222-e7216bccfa13",
+  "events": [
+    "video-change"
+  ],
+  "endpoint": "https://pub-pre-prod-up.ft.com/notification/brightcove/content"
+}
+```
+
+Check your subscriptions again.
 
 ###Integration points
 
