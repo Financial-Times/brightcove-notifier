@@ -190,6 +190,9 @@ func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *h
 		return
 	}
 	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
+	if video["error_code"] == "NOT_FOUND" {
+		w.WriteHeader(http.StatusNoContent)
+	}
 }
 
 func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.Request) {
