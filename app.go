@@ -173,8 +173,12 @@ func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *h
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
-
+	if video["error_code"] == "NOT_FOUND" {
+		infoLogger.Printf("tid=[%v]. Fetching video [%s]. It was not found in Brightcove API.", transactionID, video["id"])
+	} else {
+		infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
+	}
+	
 	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
