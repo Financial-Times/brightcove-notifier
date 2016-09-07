@@ -166,34 +166,36 @@ func (ve videoEvent) String() string {
 
 func (bn brightcoveNotifier) handleForceNotification(w http.ResponseWriter, r *http.Request) {
 	transactionID := transactionidutils.GetTransactionIDFromRequest(r)
-
 	video, err := bn.fetchVideo(videoEvent{Video: mux.Vars(r)["id"]}, transactionID)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. Fetching video: [%v]", transactionID, err)
+		warnLogger.Printf("tid=%v video_id=%v Fetching video unsuccessful: %v", transactionID, mux.Vars(r)["id"], err)
+		if err.Error() == "Too many requests. status=429" {
+			w.WriteHeader(429)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if video["error_code"] == "NOT_FOUND" {
-		infoLogger.Printf("tid=[%v]. Fetching video [%s]. It was not found in Brightcove API.", transactionID, video["id"])
+		infoLogger.Printf("tid=%v video_id=%s Video was not found in Brightcove API.", transactionID, video["id"])
 	} else {
-		infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
+		infoLogger.Printf("tid=%v video_id=%s Fetching video successful.", transactionID, video["id"])
 	}
-	
+
 	err = addUPPRequiredFields(video)
 	if err != nil {
 		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Generated uuid [%v] for video [%v].", transactionID, video["uuid"], video["id"])
-
+	infoLogger.Printf("tid=%v video_id=%v uuid=%v Generated uuid for video.", transactionID, video["id"], video["uuid"])
 	err = bn.fwdVideo(video, transactionID)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. Forwarding video: [%v]", transactionID, err)
+		warnLogger.Printf("tid=%v video_id=%v Forwarding video unsuccessful.", transactionID, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
+	infoLogger.Printf("tid=%v video_id=%s Forwarding video successful.", transactionID, video["id"])
 	if video["error_code"] == "NOT_FOUND" {
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -205,15 +207,15 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 	var event videoEvent
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. Invalid request received: [%v]", transactionID, err)
+		warnLogger.Printf("tid=%v Invalid request received: %v", transactionID, err)
 		return
 	}
 
 	if bn.brightcoveConf.accountID != event.AccountID {
-		warnLogger.Printf("tid=[%v]. Invalid notification event received. Unexpected accountID: [%v]. Ignoring...", transactionID, event.AccountID)
+		warnLogger.Printf("tid=%v account_id=%v Invalid notification event received. Unexpected accountID. Ignoring...", transactionID, event.AccountID)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Received notification event for video: [%v]", transactionID, event.Video)
+	infoLogger.Printf("tid=%v video_id=%v Received notification event for video.", transactionID, event.Video)
 
 	video, err := bn.fetchVideo(event, transactionID)
 	if err != nil {
@@ -221,23 +223,23 @@ func (bn brightcoveNotifier) handleNotification(w http.ResponseWriter, r *http.R
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Fetching video [%s] successful.", transactionID, video["id"])
+	infoLogger.Printf("tid=%v video_id=%s Fetching video successful.", transactionID, video["id"])
 
 	err = addUPPRequiredFields(video)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. [%v]", transactionID, err)
+		warnLogger.Printf("tid=%v %v", transactionID, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Generated uuid [%v] for video [%v].", transactionID, video["uuid"], video["id"])
+	infoLogger.Printf("tid=%v video_id=%v uuid=%v Generated uuid for video.", transactionID, video["id"], video["uuid"])
 
 	err = bn.fwdVideo(video, transactionID)
 	if err != nil {
-		warnLogger.Printf("tid=[%v]. Forwarding video: [%v]", transactionID, err)
+		warnLogger.Printf("tid=%v video_id=%s Forwarding video unsuccessful: [%v]", transactionID, video["id"], err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	infoLogger.Printf("tid=[%v]. Forwarding video [%s] successful.", transactionID, video["id"])
+	infoLogger.Printf("tid=%v video_id=%s Forwarding video successful.", transactionID, video["id"])
 }
 
 func addUPPRequiredFields(video video) error {
